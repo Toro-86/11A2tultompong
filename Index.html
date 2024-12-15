@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Confession Website</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: url('pixelcut-export.jpeg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Overlay Effect */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Content Styling */
+        .content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Logo Styling */
+        .logo {
+            max-width: 100%;
+            width: 200px;
+            height: auto;
+            animation: bounce 2s infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Bounce Animation */
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        /* Heading Styling */
+        .content h1 {
+            color: #ffdc00;
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        /* Input Fields Styling */
+        textarea, input[type="file"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            outline: none;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        /* Button Styling */
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            color: #fff;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        button:hover {
+            background: linear-gradient(to right, #feb47b, #ff7e5f);
+            transform: scale(1.05);
+        }
+
+        /* Status Message Styling */
+        .status {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1em;
+        }
+
+        .loading {
+            color: #00ff00;
+        }
+
+        .error {
+            color: #ff0000;
+        }
+
+        .success {
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay -->
+    <div class="overlay"></div>
+
+    <!-- Content -->
+    <div class="content">
+        <img src="Screenshot_2024-12-14-20-19-09-73_f69139cffc4d135a71392e13634f144a.png" class="logo" alt="Confess 3D Logo">
+        <h1>បញ្ចេញមតិតាមចិត្ត</h1>
+        <form id="confessionForm">
+            <textarea id="confession" placeholder="សរសេរមតិតាមចិត្ត..." rows="5" required></textarea>
+            <input type="file" id="media" accept="image/*,video/*" />
+            <button type="submit">ផ្ញើសារមតិ</button>
+        </form>
+        <p class="status" id="statusMessage"></p>
+    </div>
+
+    <script>
+        const telegramBotToken = '8000073471:AAHlFwK3AlBNwVZTRJvT7N40CYE8z82_WnA'; // Add your Telegram bot token in a secure backend.
+        const chatId = '5586750442'; // Replace with your Telegram Chat ID
+        let confessionCount = 0; // Track confession number
+
+        document.getElementById('confessionForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const confession = document.getElementById('confession').value;
+            const media = document.getElementById('media').files[0];
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = "Sending...";
+            statusMessage.className = "status loading";
+
+            try {
+                confessionCount++;
+                const numberedConfession = `Confession #${confessionCount}: ${confession}`;
+
+                await sendMessage(numberedConfession);
+
+                if (media) {
+                    await sendMedia(media, confessionCount);
+                }
+
+                statusMessage.textContent = "Confession sent successfully!";
+                statusMessage.className = "status success";
+                document.getElementById('confession').value = '';
+                document.getElementById('media').value = '';
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.textContent = "Failed to send confession. Please try again.";
+                statusMessage.className = "status error";
+            }
+
+            setTimeout(() => {
+                statusMessage.textContent = '';
+                statusMessage.className = "status";
+            }, 5000);
+        });
+
+        async function sendMessage(confession) {
+            const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
+
+            const data = {
+                chat_id: chatId,
+                text: `New Confession:\n\n${confession}`
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
+        }
+
+        async function sendMedia(media, confessionNumber) {
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('document', media);
+            formData.append('caption', `Confession #${confessionNumber}`);
+
+            const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendDocument`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send media');
+            }
+        }
+    </script>
+</body>
+</html>
